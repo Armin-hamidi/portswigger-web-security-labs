@@ -184,7 +184,7 @@ The exact impact depends on the application's architecture, authentication model
 
 This lab helped me understand how reflected XSS can occur when user-controlled input is inserted into an HTML response without appropriate output encoding.
 
-My approach was:
+My approach was like this:
 
 ```text
 Identify user input
