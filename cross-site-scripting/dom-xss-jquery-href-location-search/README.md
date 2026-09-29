@@ -14,7 +14,7 @@ The objective of this lab was to identify and exploit a DOM-based XSS vulnerabil
 
 ## 2. Initial Reconnaissance
 
-After opening the lab, I was redirected to the **Submit feedback** page.
+After opening this lab, I was redirected to the **Submit feedback** page.
 
 The URL contained the following query parameter:
 
