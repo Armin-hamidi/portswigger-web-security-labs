@@ -219,5 +219,5 @@ In this case, the vulnerable data flow was:
 location.search → returnPath → jQuery .attr("href", ...) → javascript: URI → JavaScript execution
 ```
 
-This demonstrated how insufficient validation of URL schemes can turn a seemingly normal navigation parameter into a DOM-based XSS vulnerability.
+
 
