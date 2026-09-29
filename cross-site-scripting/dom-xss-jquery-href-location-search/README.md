@@ -173,59 +173,6 @@ The successful execution confirms the presence of a **DOM-based XSS vulnerabilit
 
 The vulnerability results from an unsafe flow of user-controlled data from the URL into a JavaScript-capable DOM context.
 
-The application obtains the query string through:
-
-```javascript
-window.location.search
-```
-
-It then extracts the `returnPath` parameter:
-
-```javascript
-(new URLSearchParams(window.location.search)).get('returnPath')
-```
-
-Finally, the value is assigned to the `href` attribute:
-
-```javascript
-$('#backLink').attr("href", ...)
-```
-
-When the attacker supplies:
-
-```text
-javascript:alert(1)
-```
-
-the resulting DOM becomes:
-
-```html
-<a id="backLink" href="javascript:alert(1)">Back</a>
-```
-
-Unlike an ordinary URL such as:
-
-```text
-/
-```
-
-the `javascript:` scheme instructs the browser to execute the contents as JavaScript when the link is activated.
-
-The vulnerability therefore exists because the application fails to validate the URL scheme before assigning attacker-controlled data to the `href` attribute.
-
-### Source and Sink
-
-| Component  | Value                       |
-| ---------- | --------------------------- |
-| Source     | `window.location.search`    |
-| Parameter  | `returnPath`                |
-| Processing | `URLSearchParams`           |
-| Sink       | jQuery `.attr("href", ...)` |
-| Payload    | `javascript:alert(1)`       |
-| Result     | JavaScript execution        |
-
----
-
 ## 7. Impact
 
 In a real-world application, DOM-based XSS can allow an attacker to execute arbitrary JavaScript in the security context of the vulnerable origin.
