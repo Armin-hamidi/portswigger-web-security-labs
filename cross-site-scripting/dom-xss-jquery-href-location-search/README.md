@@ -191,7 +191,7 @@ The practical impact depends on the application's architecture, authentication m
 
 ## 8. Conclusion / Takeaway
 
-This lab demonstrated how a DOM-based XSS vulnerability can arise when client-side JavaScript takes attacker-controlled data from `location.search` and assigns it to a JavaScript-capable DOM sink.
+The lab demonstrated how a DOM-based XSS vulnerability can arise when client-side JavaScript takes attacker-controlled data from `location.search` and assigns it to a JavaScript-capable DOM sink.
 
 The investigation followed this process:
 
