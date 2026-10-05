@@ -40,7 +40,7 @@ The resulting HTML contained:
 ```
 
 <p>
-<img src="../images/Screenshot 1.png" alt="Searching for test123">
+<img src="../reflected-xss-attribute-html-encoded/images/Screenshot 1.png" alt="Searching for test123">
 </p>
 
 <hr>
@@ -74,7 +74,7 @@ The application returned:
 ```
 
 <p>
-<img src="../images/Screenshot2.png" alt="Testing angle brackets">
+<img src="../reflected-xss-attribute-html-encoded/images/Screenshot2.png" alt="Testing angle brackets">
 </p>
 
 <hr>
@@ -101,7 +101,7 @@ After seeing the encoded angle brackets, I checked the exact HTML context again:
 ```
 
 <p>
-<img src="../images/screenshot3.png" alt="Angle brackets HTML encoded">
+<img src="../reflected-xss-attribute-html-encoded/images/Screenshot3.png" alt="Angle brackets HTML encoded">
 </p>
 
 <hr>
@@ -207,7 +207,7 @@ alert(1)
 ```
 
 <p>
-<img src="../images/screenshot4.png" alt="Successful XSS alert">
+<img src="../reflected-xss-attribute-html-encoded/images/Screenshot4.png" alt="Successful XSS alert">
 </p>
 
 <hr>
