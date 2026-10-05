@@ -74,7 +74,7 @@ The application returned:
 ```
 
 <p>
-<img src="../images/screenshot2.png" alt="Testing angle brackets">
+<img src="../images/Screenshot2.png" alt="Testing angle brackets">
 </p>
 
 <hr>
