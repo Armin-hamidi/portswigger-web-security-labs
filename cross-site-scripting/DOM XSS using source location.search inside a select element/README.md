@@ -1,462 +1,252 @@
 
+# DOM XSS in `document.write` Sink Using Source `location.search` Inside a Select Element
 
-\# DOM XSS in `document.write` Sink Using Source `location.search` Inside a Select Element
-
-
-
-\## Lab Description
-
-
+## Lab Description
 
 This lab demonstrates a DOM-based Cross-Site Scripting (XSS) vulnerability in the stock checker functionality.
 
+The page reads the `storeId` query parameter from the URL using `window.location.search` and `URLSearchParams`. It then inserts the value into HTML using `document.write()` to create an option inside a `<select>` element.
 
+Because the input is inserted into an HTML string without safe handling, I was able to manipulate the page's HTML structure and execute JavaScript in the browser.
 
-The page reads the `storeId` parameter from the URL using `window.location.search` and `URLSearchParams`. It then inserts that value into HTML using `document.write()` to create an option inside a `<select>` element.
+## Solution
 
+### 1. Inspecting the Stock Checker JavaScript
 
-
-Because the user-controlled input is inserted into the HTML without proper handling, I was able to break out of the existing HTML structure and execute JavaScript.
-
-
-
-\## Solution
-
-
-
-\### 1. Inspecting the Stock Checker Functionality
-
-
-
-I started by using the stock checker normally and inspecting the page's HTML and JavaScript.
-
-
+I started by using the stock checker and inspecting the page's JavaScript to understand how the dropdown was generated.
 
 I found the following code:
 
-
-
 ```javascript
-
-var stores = \["London", "Paris", "Milan"];
-
-
+var stores = ["London", "Paris", "Milan"];
 
 var store = (new URLSearchParams(window.location.search))
-
-&#x20;   .get('storeId');
-
-
+    .get('storeId');
 
 document.write('<select name="storeId">');
 
-
-
 if (store) {
-
-&#x20;   document.write('<option selected>' + store + '</option>');
-
+    document.write('<option selected>' + store + '</option>');
 }
-
 ```
 
+I identified two important details:
 
-
-I noticed two important things:
-
-
-
-\- `stores` contains the predefined store names: London, Paris, and Milan.
-
-\- `store` gets its value from the `storeId` query parameter in the URL.
-
-
+- `stores` contains the predefined store names: London, Paris, and Milan.
+- `store` gets its value from the `storeId` query parameter in the URL.
 
 The most interesting line was:
 
-
-
 ```javascript
-
 document.write('<option selected>' + store + '</option>');
-
 ```
 
+The application concatenates the URL-controlled value directly into an HTML string and passes that string to `document.write()`.
 
-
-The value from the URL was being inserted directly into HTML.
-
-
-
-I suspected that I could control this value by adding a `storeId` parameter to the URL.
-
-
+This gave me a potential source-to-sink path to investigate.
 
 <p>
-
-<img src="images/Screenshot 1.png" alt="Screenshot 1 - Inspecting the stock checker JavaScript and identifying the storeId source and document.write sink">
-
+<img src="images/Screenshot 1.png" alt="Inspecting the stock checker JavaScript and identifying the storeId source and document.write sink">
 </p>
 
+### 2. Confirming That the URL Controls the Dropdown
 
+The original URL contained a `productId` parameter but no `storeId` parameter.
 
-\### 2. Testing the `storeId` Parameter
-
-
-
-My original URL contained the product ID but did not contain a `storeId` parameter.
-
-
-
-I added a test value to the URL:
-
-
+I added a simple test value:
 
 ```text
-
-?productId=1\&storeId=test123
-
+?productId=1&storeId=test123
 ```
-
-
 
 After loading the page, I saw `test123` appear in the stock checker's dropdown.
 
-
-
-In the Elements panel, I found:
-
-
+In the Elements panel, I found the generated structure:
 
 ```html
-
 <select name="storeId">
-
-&#x20;   <option selected>test123</option>
-
-&#x20;   <option>London</option>
-
-&#x20;   <option>Paris</option>
-
-&#x20;   <option>Milan</option>
-
+    <option selected>test123</option>
+    <option>London</option>
+    <option>Paris</option>
+    <option>Milan</option>
 </select>
-
 ```
 
+This confirmed that the value from the URL was being inserted into the generated HTML.
 
+At this point, I had established the data flow:
 
-This confirmed that the JavaScript was reading my input from the URL and inserting it into the page.
+**URL query parameter → JavaScript extraction → `document.write()` → generated HTML**
 
-
-
-I had identified a path from a user-controlled source to an HTML-generating sink.
-
-
+However, this alone did not prove XSS. I still needed to determine how the browser interpreted input containing HTML syntax.
 
 <p>
-
-<img src="images/Screenshot 2.png" alt="Screenshot 2 - The storeId test value appears in the stock checker dropdown">
-
+<img src="images/Screenshot 2.png" alt="The storeId test value appears in the stock checker dropdown">
 </p>
 
+### 3. Testing HTML-Looking Input
 
+Next, I tested whether the browser interpreted HTML markup in the supplied value.
 
-\### 3. Testing Whether HTML Markup Was Interpreted
-
-
-
-Next, I wanted to understand how the browser handled HTML-looking input.
-
-
-
-I tested:
-
-
+I used:
 
 ```text
-
 storeId=TEST<b>HELLO</b>
-
 ```
 
+I inspected the resulting DOM and observed that the input affected the generated HTML rather than being safely handled as ordinary text.
 
+This was an important clue because `document.write()` parses the string as HTML. It does not automatically treat every part of that string as harmless text.
 
-In the Elements panel, I could see the `<b>` markup inside the generated option.
-
-
-
-This was an important clue: the input was not necessarily being treated as harmless text. The browser was parsing the HTML generated by `document.write()`.
-
-
-
-I decided to investigate whether I could change the existing HTML structure.
-
-
+My next question was whether I could change the existing HTML structure—not just insert markup into the option.
 
 <p>
-
-<img src="images/Screenshot 3.png" alt="Screenshot 3 - Testing HTML markup inside the storeId parameter">
-
+<img src="images/Screenshot 3.png" alt="Testing HTML markup in the storeId parameter and inspecting the resulting DOM">
 </p>
 
+### 4. Breaking Out of the Existing Select Element
 
-
-\### 4. Breaking Out of the Existing Select Element
-
-
-
-The input was inserted inside this structure:
-
-
+The application generated an option inside a select element:
 
 ```html
-
 <select name="storeId">
-
-&#x20;   <option selected>YOUR\_INPUT\_HERE</option>
-
+    <option selected>YOUR_INPUT_HERE</option>
 </select>
-
 ```
 
-
-
-I reasoned that if the browser interpreted closing tags inside my input, I might be able to close the existing option and dropdown before the page finished writing its remaining options.
-
-
+I hypothesized that I could use closing tags to end the existing option and select elements before the browser finished parsing the generated markup.
 
 I tested:
 
-
-
-```text
-
+```html
 TEST</option></select>
-
 ```
 
+After reloading the page, I inspected the live DOM.
 
+The injected closing tags changed the structure: the dropdown ended early, and the remaining London, Paris, and Milan options appeared outside the original `<select>` element.
 
-After inspecting the resulting DOM, I noticed that the dropdown closed after my injected value. The London, Paris, and Milan options appeared outside the `<select>` element.
+This showed that my input could alter the HTML structure generated by the page.
 
-
-
-This showed that my input could change the HTML structure generated by the page.
-
-
-
-I now had evidence of HTML injection and a way to escape the original dropdown context.
-
-
+I had now confirmed HTML injection and identified a way to escape the intended element context. The remaining step was to test whether this could lead to JavaScript execution.
 
 <p>
-
-<img src="images/Screenshot 4.png" alt="Screenshot 4 - Closing the option and select elements moves the remaining options outside the dropdown">
-
+<img src="images/Screenshot 4.png" alt="Closing the option and select elements changes the generated DOM structure">
 </p>
 
+### 5. Testing JavaScript Execution
 
-
-\### 5. Testing JavaScript Execution
-
-
-
-After confirming that I could break out of the existing HTML structure, I tried injecting a script element.
-
-
+After confirming that I could change the HTML structure, I tested whether I could inject a script element.
 
 My test input was:
 
-
-
 ```html
-
 test2</option></select><script>alert(1)</script>
-
 ```
 
+I constructed the input in stages:
 
+1. `test2` provides a recognizable value.
+2. `</option>` closes the current option.
+3. `</select>` closes the dropdown.
+4. `<script>alert(1)</script>` attempts to introduce JavaScript that displays an alert.
 
-The idea was to:
-
-
-
-1\. Close the current option.
-
-2\. Close the select element.
-
-3\. Insert a script element containing JavaScript.
-
-4\. Check whether the browser executed the script.
-
-
-
-I loaded the page and observed the result.
-
-
+I loaded the page with this input and observed the browser's behavior.
 
 <p>
-
-<img src="images/Screenshot 5.png" alt="Screenshot 5 - Testing a script element after closing the existing select context">
-
+<img src="images/Screenshot 5.png" alt="Testing a script element after closing the existing select context">
 </p>
 
-
-
-\### 6. Confirming the XSS Vulnerability
-
-
+### 6. Confirming Successful XSS
 
 The browser displayed an alert containing `1`.
 
+This confirmed that JavaScript executed as a result of my input.
 
-
-This confirmed that my injected JavaScript had executed.
-
-
-
-The vulnerability occurred because the page took data from the URL and passed it directly into `document.write()`. By supplying HTML that changed the existing structure, I was able to inject a script element and execute JavaScript in the browser.
-
-
+The vulnerability was not simply that the application accepted an unusual value. The important issue was that the value was incorporated into HTML, interpreted by the browser, and used to change the document in a way that allowed script execution.
 
 <p>
-
-<img src="images/Screenshot 6.png" alt="Screenshot 6 - Successful JavaScript execution confirmed by the alert dialog">
-
+<img src="images/Screenshot 6.png" alt="Successful JavaScript execution confirmed by the alert dialog">
 </p>
 
+## Technical Explanation
 
-
-\## Technical Explanation
-
-
-
-The vulnerability follows this source-to-sink path:
-
-
-
-\*\*Source:\*\*
-
-
+### Source
 
 ```javascript
-
 window.location.search
-
 ```
 
+This property exposes the query string from the current URL. In this lab, the attacker-controlled input is supplied through the `storeId` parameter.
 
-
-The query string contains user-controlled input.
-
-
-
-\*\*Input extraction:\*\*
-
-
+### Input Extraction
 
 ```javascript
-
 new URLSearchParams(window.location.search).get('storeId')
-
 ```
 
+`URLSearchParams` parses the query string, and `.get('storeId')` retrieves the value associated with that parameter.
 
+It does not retrieve `productId`; each parameter is accessed by its own name.
 
-The script reads the `storeId` parameter.
-
-
-
-\*\*Sink:\*\*
-
-
+### Vulnerable Sink
 
 ```javascript
-
 document.write('<option selected>' + store + '</option>');
-
 ```
 
+The application concatenates the extracted value into an HTML string and writes it into the document.
 
+Because the value is not safely handled for the HTML parsing context, input containing HTML syntax can affect the resulting DOM.
 
-The value is concatenated into an HTML string and written into the document.
+### Why This Is DOM-Based XSS
 
+The relevant processing occurs in client-side JavaScript:
 
+1. The script reads data from the URL.
+2. It extracts the `storeId` parameter.
+3. It concatenates that value into an HTML string.
+4. `document.write()` writes the string into the document for HTML parsing.
+5. The crafted input changes the DOM and, in this lab, results in JavaScript execution.
 
-\*\*Result:\*\*
+This is a source-to-sink vulnerability: attacker-controlled data reaches an unsafe HTML-writing operation.
 
+## Key Takeaway
 
+This lab taught me to investigate a potential XSS vulnerability step by step instead of guessing a payload immediately.
 
-The browser parses the generated HTML. Because the input is not safely handled for this HTML context, I was able to close existing elements, change the page structure, and inject JavaScript that executed.
+My investigation followed this process:
 
+1. I inspected the stock checker's JavaScript.
+2. I identified `storeId` as a URL-controlled input.
+3. I confirmed that the value appeared in the generated HTML.
+4. I tested how the browser handled HTML-looking input.
+5. I discovered that closing tags could change the document structure.
+6. I injected a script element and confirmed JavaScript execution with an alert.
 
+The main lesson is:
 
-This is DOM-based XSS because the vulnerable processing happens in client-side JavaScript, using data from the URL to modify the document.
+**Understand the source, sink, and parsing context before choosing an XSS payload.**
 
+### How to Prevent This Vulnerability
 
+Developers should avoid inserting untrusted input into HTML using `document.write()`.
 
-\## Key Takeaway
+For a dropdown, a safer approach is to create DOM elements explicitly and assign untrusted values through text-oriented APIs such as `textContent` or the option element's `text` property.
 
+If a value is supposed to be one of a few predefined store names, the application should also validate it against the allowed values. Validation is useful for enforcing the expected input, but it should not replace safe DOM construction.
 
-
-This lab taught me to follow the complete path from source to sink instead of immediately guessing an XSS payload.
-
-
-
-My investigation followed these steps:
-
-
-
-1\. I inspected the JavaScript used by the stock checker.
-
-2\. I identified `storeId` as a value read from the URL.
-
-3\. I confirmed that the value appeared in the generated HTML.
-
-4\. I tested how the browser handled HTML markup.
-
-5\. I discovered that I could close the existing select element.
-
-6\. I tested JavaScript execution and confirmed the vulnerability with an alert.
-
-
-
-The main lesson is that \*\*I need to understand the HTML context before choosing an XSS payload\*\*.
-
-
-
-To prevent this vulnerability, developers should avoid inserting untrusted input directly into HTML using `document.write()`. They should use safer DOM APIs, such as assigning untrusted values with `textContent`, and validate data according to its intended purpose.
-
-
-
-\## Final Payload
-
-
+## Final Payload
 
 ```html
-
 test2</option></select><script>alert(1)</script>
-
 ```
 
+## Vulnerability Summary
 
-
-\## Vulnerability Summary
-
-
-
-\- \*\*Vulnerability:\*\* DOM-based Cross-Site Scripting (XSS)
-
-\- \*\*Source:\*\* `window.location.search`
-
-\- \*\*Input parameter:\*\* `storeId`
-
-\- \*\*Sink:\*\* `document.write()`
-
-\- \*\*Root cause:\*\* User-controlled input was inserted into HTML without appropriate handling.
-
-\- \*\*Impact:\*\* An attacker could craft a URL that executes JavaScript in a victim's browser if the victim visits the vulnerable page.
-
-
-
+- **Vulnerability:** DOM-based Cross-Site Scripting (XSS)
+- **Source:** `window.location.search`
+- **Input parameter:** `storeId`
+- **Sink:** `document.write()`
+- **Root cause:** URL-controlled input was concatenated into HTML without safe handling for the HTML parsing context.
+- **Impact:** An attacker could craft a URL that executes JavaScript in a victim's browser if the victim visits the vulnerable page.
