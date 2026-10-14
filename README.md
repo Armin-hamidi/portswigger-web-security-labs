@@ -1,7 +1,7 @@
 
 # PortSwigger Web Security Labs
 
-Documenting my hands-on practice with PortSwigger Web Security Academy labs, with a focus on understanding web vulnerabilities, exploitation techniques, and the security mindset behind them.
+Documenting my hands-on practice with PortSwigger Web Security Academy labs,  with a focus on understanding web vulnerabilities, exploitation techniques, and the security mindset behind them.
 
 ## Labs
 
