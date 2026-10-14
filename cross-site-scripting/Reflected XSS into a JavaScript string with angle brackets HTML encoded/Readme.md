@@ -16,7 +16,7 @@ The application HTML-encoded angle brackets, so I needed to find another way to 
 
 ## 2. Initial Reconnaissance
 
-After opening the lab, I tested the search functionality with a simple value:
+After opening the lab, I tested the search functionality with a  simple value:
 
 ```text
 test123
