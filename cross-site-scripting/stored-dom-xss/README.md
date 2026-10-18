@@ -1,340 +1,282 @@
-\# Stored DOM XSS
+# Stored DOM XSS
 
+## Lab Description
 
+**Difficulty:** Practitioner
 
-\## Lab Description
+This lab demonstrates a stored DOM-based Cross-Site Scripting (XSS) vulnerability in the blog comment functionality.
 
+The application stores user-submitted comments and retrieves them using client-side JavaScript. Before displaying the comments, the JavaScript attempts to encode angle brackets using an `escapeHTML()` function.
 
+However, the function is implemented incorrectly. It uses JavaScript's `String.replace()` method with string arguments, which means it replaces only the first occurrence of each character.
 
-\*\*Difficulty:\*\* Practitioner
+Because the application later inserts the processed comment into the page using `innerHTML`, any remaining HTML markup can be interpreted by the browser.
 
+The goal of this lab was to investigate the comment functionality, identify the incomplete HTML encoding, and exploit the vulnerability to execute `alert(1)`.
 
+## Solution
 
-The goal of this lab was to exploit a stored DOM-based Cross-Site Scripting vulnerability in the blog comment functionality and trigger `alert(1)`.
+### 1. Testing the Comment Functionality
 
-
-
-The website attempted to prevent HTML injection by encoding angle brackets in user-submitted comments. However, the JavaScript function responsible for this protection only replaced the first occurrence of each character.
-
-
-
-By investigating the client-side JavaScript, testing my hypothesis, and identifying the unsafe `innerHTML` sink, I was able to bypass the incomplete encoding and execute JavaScript.
-
-
-
-\## Solution
-
-
-
-\### 1. Testing the Comment Functionality
-
-
+<p>
+<img src="images/screenshot 1.png" alt="Screenshot 1 - Submitting a normal blog comment">
+</p>
 
 I started by investigating the blog's comment section because the lab description mentioned a vulnerability in the comment functionality.
 
+I submitted a normal comment using the following values:
 
+- **Comment:** `testcomment`
+- **Name:** `testname`
+- **Email:** `test@gmail.com`
+- **Website:** `https://test.com`
 
-I submitted a normal comment with a name, email address, and website to observe how the application handled my input.
+The application accepted the comment and displayed it on the blog post.
 
+I also noticed that the website field required a valid URL beginning with `http:` or `https:`. This showed that the application performed some input validation.
 
-
-The website accepted the website field when I entered a valid URL beginning with `https://`.
-
-
+However, validation does not necessarily prevent XSS. I needed to understand how the application stored, retrieved, and processed the submitted data.
 
 My first step was to establish normal behavior before testing for a vulnerability.
 
-
-
-<p>
-
-<img src="images/Screenshot 1.png" alt="Screenshot 1 - Submitting a normal blog comment">
-
-</p>
-
-
-
-\### 2. Inspecting the Comment in the DOM
-
-
-
-After submitting my comment, I inspected the live DOM in the browser's developer tools.
-
-
-
-I found that the author name, website, and comment body were rendered in different parts of the comment section.
-
-
-
-The website was placed inside an anchor's `href` attribute, while the comment body was displayed inside a paragraph.
-
-
-
-This gave me three areas to investigate: the name, the comment body, and the website attribute.
-
-
+### 2. Inspecting the Rendered Comment in the DOM
 
 <p>
-
-<img src="images/Screenshot 2.png" alt="Screenshot 2 - Inspecting the rendered comment and its HTML elements">
-
+<img src="images/screenshot 2.png" alt="Screenshot 2 - Inspecting the rendered comment and its HTML elements">
 </p>
 
+After submitting the comment, I opened the browser's developer tools and inspected the live DOM.
 
+I found that the application rendered the submitted information in different places:
 
-\### 3. Testing Special Characters
+- The author's name appeared in the comment header.
+- The website was assigned to the `href` attribute of an anchor element.
+- The comment body appeared inside a paragraph element.
 
+The rendered structure looked similar to this:
 
+```html
+<section class="comment">
+    <p>
+        <a id="author" href="https://test.com"></a>
+        testname | DATE
+        <img class="avatar" src="/resources/images/avatarDefault.svg">
+    </p>
+    <p>testcomment</p>
+    <p></p>
+</section>
+```
+
+`DATE` represents the date displayed by the application; it is a placeholder in this example.
+
+This inspection helped me understand where the submitted values appeared in the page and which elements I should investigate further.
+
+I now had several possible areas to examine, especially the comment body and the author information.
+
+### 3. Testing Special Characters
+
+<p>
+<img src="images/screenshot 3.png" alt="Screenshot 3 - Testing special characters in the name and comment fields">
+</p>
 
 My next step was to test how the application handled special characters.
 
+I submitted characters such as:
 
+```text
+< ' " >
+```
 
-I submitted angle brackets and quotation marks in the name and comment fields.
+I wanted to determine whether the application treated these characters as plain text or allowed them to change the page's HTML structure.
 
+The characters appeared as text on the page. When I inspected the DOM, I found that angle brackets were represented using HTML entities such as `&lt;` and `&gt;`.
 
+This suggested that the application was attempting to prevent HTML injection.
 
-On the page, the characters appeared as text. However, inspecting the DOM showed that the angle brackets had been encoded as `\&lt;` and `\&gt;`.
+However, I did not assume that this protection was secure simply because my initial test did not create an HTML element.
 
+I needed to identify where the encoding occurred and whether it handled every occurrence of the special characters.
 
-
-This suggested that the application was trying to prevent HTML injection.
-
-
-
-Instead of assuming that the protection was secure, I decided to investigate how the application processed the input.
-
-
+### 4. Finding the JavaScript That Loads Comments
 
 <p>
-
-<img src="images/Screenshot 3.png" alt="Screenshot 3 - Testing special characters and checking their representation in the DOM">
-
+<img src="images/screenshot 4.png" alt="Screenshot 4 - Finding the JavaScript file responsible for loading comments">
 </p>
-
-
-
-\### 4. Finding the JavaScript That Loads Comments
-
-
 
 I inspected the page source and found the following code:
 
-
-
 ```html
-
 <span id="user-comments">
-
-&#x20;   <script src="/resources/js/loadCommentsWithVulnerableEscapeHtml.js"></script>
-
-&#x20;   <script>loadComments('/post/comment')</script>
-
+    <script src="/resources/js/loadCommentsWithVulnerableEscapeHtml.js"></script>
+    <script>
+        loadComments('/post/comment')
+    </script>
 </span>
-
 ```
 
+Two details caught my attention:
 
+- The application loaded a JavaScript file named `loadCommentsWithVulnerableEscapeHtml.js`.
+- It called `loadComments('/post/comment')` to retrieve the comments.
 
-This showed that the comment section was populated by client-side JavaScript.
+This showed that client-side JavaScript was responsible for loading and displaying the stored comments.
 
+I opened the JavaScript file to investigate how the application processed the returned data.
 
+This was an important step because I needed to trace the data flow rather than focus only on the visible output.
 
-I opened `loadCommentsWithVulnerableEscapeHtml.js` to investigate how the stored comments were retrieved and displayed.
-
-
-
-This was an important step because the vulnerability involved DOM manipulation rather than simply reflecting input directly into the server-generated HTML.
-
-
+### 5. Identifying the Incomplete HTML Encoding
 
 <p>
-
-<img src="images/Screenshot 4.png" alt="Screenshot 4 - Finding the JavaScript file responsible for loading comments">
-
+<img src="images/screenshot 5.png" alt="Screenshot 5 - Inspecting the vulnerable escapeHTML function">
 </p>
-
-
-
-\### 5. Identifying the Incomplete HTML Encoding
-
-
 
 Inside the JavaScript file, I found the following function:
 
-
-
 ```javascript
-
 function escapeHTML(html) {
-
-&#x20;   return html.replace('<', '\&lt;').replace('>', '\&gt;');
-
+    return html.replace('<', '&lt;').replace('>', '&gt;');
 }
-
 ```
 
+At first glance, the function appeared to protect against HTML injection by replacing angle brackets with HTML entities.
 
+However, the problem was how JavaScript's `String.replace()` method behaved.
 
-The function was intended to encode angle brackets to prevent user input from being interpreted as HTML.
+When the first argument is a string, `replace()` changes only the first occurrence of that string. It does not automatically replace every matching character.
 
+For example, consider this input:
 
-
-However, JavaScript's `replace()` method replaces only the first occurrence when its search argument is a string.
-
-
-
-This meant that the function encoded only the first `<` and the first `>`, leaving subsequent occurrences unchanged.
-
-
-
-For example, a global regular expression would replace all occurrences:
-
-
-
-```javascript
-
-function escapeHTML(html) {
-
-&#x20;   return html.replace(/</g, '\&lt;').replace(/>/g, '\&gt;');
-
-}
-
+```html
+A <B> C <D>
 ```
 
+The function replaces the first `<` with `&lt;`. It then replaces the first `>` in the resulting string with `&gt;`.
 
+The later angle brackets remain unchanged.
 
-I now had a hypothesis: if I submitted input containing multiple pairs of angle brackets, later markup might survive the incomplete encoding.
+A global regular expression would replace all occurrences of these characters:
 
+```javascript
+function escapeHTML(html) {
+    return html.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+```
 
+This demonstrates the specific problem with the original implementation. However, for displaying plain text, using `textContent` is generally safer than writing a custom HTML-escaping function.
+
+I had now identified a potential weakness: if I submitted content containing multiple pairs of angle brackets, some markup might survive the encoding process.
+
+My next step was to test that hypothesis without immediately attempting JavaScript execution.
+
+### 6. Confirming the Vulnerability With a Harmless Test
 
 <p>
-
-<img src="images/Screenshot 5.png" alt="Screenshot 5 - Discovering the vulnerable escapeHTML function">
-
+<img src="images/screenshot 6.png" alt="Screenshot 6 - Testing whether later angle brackets survive the incomplete encoding">
 </p>
-
-
-
-\### 6. Confirming the Vulnerability With a Harmless Test
-
-
 
 Before attempting to execute JavaScript, I tested my hypothesis using harmless HTML-like input:
 
-
-
 ```html
-
 A <B> C <D>
-
 ```
 
+I then inspected the resulting comment in the live DOM.
 
+The output showed that the first angle brackets were encoded, while later markup was not consistently encoded. The browser could therefore interpret some of the remaining characters as HTML syntax.
 
-I inspected the resulting comment in the live DOM and observed that the first angle brackets were encoded, while later markup was not consistently encoded.
+This confirmed that the `escapeHTML()` function did not handle every occurrence of `<` and `>`.
 
+I also found that the application used `innerHTML` to insert the processed comment into the page. For example, the comment body was handled like this:
 
+```javascript
+commentBodyPElement.innerHTML = escapeHTML(comment.body);
+```
 
-This confirmed that the escaping function did not process every occurrence.
+This was the most important discovery.
 
+Unlike `textContent`, `innerHTML` parses the supplied string as HTML. If the string contains markup that has not been safely handled, the browser can create elements from that markup.
 
+The vulnerability therefore depended on two problems working together:
 
-I also found that the comment body was inserted using `innerHTML`. Unlike `textContent`, `innerHTML` parses the supplied string as HTML.
+1. The escaping function did not encode every angle bracket.
+2. The resulting content was inserted through an HTML-parsing sink.
 
+I had confirmed the root cause and could now test whether the remaining markup could trigger JavaScript execution.
 
-
-The combination of incomplete encoding and an HTML-parsing sink made it possible for remaining markup to be interpreted by the browser.
-
-
+### 7. Exploiting the Stored DOM XSS
 
 <p>
-
-<img src="images/Screenshot 6.png" alt="Screenshot 6 - Confirming that later angle brackets survive the incomplete encoding">
-
+<img src="images/screenshot 7.png" alt="Screenshot 7 - Successfully triggering alert(1) with the stored DOM XSS payload">
 </p>
 
-
-
-\### 7. Exploiting the Stored DOM XSS
-
-
-
-After confirming the vulnerability, I submitted the following comment:
-
-
+After confirming the vulnerability, I submitted the following payload as a blog comment:
 
 ```html
-
 <><img src=1 onerror=alert(1)>
-
 ```
 
+The payload took advantage of the incomplete encoding.
 
+#### Part 1: `<>`
 
-The function encoded the first pair of angle brackets but left the subsequent image element's angle brackets unchanged.
+The initial empty angle-bracket pair was used to consume the first occurrences of `<` and `>` processed by the vulnerable function.
 
+After the replacements, the beginning of the string became:
 
+```text
+&lt;&gt;
+```
 
-The application then assigned the processed comment to `innerHTML`, allowing the browser to interpret the remaining image element as HTML.
+The browser displayed this part as text rather than treating it as an HTML element.
 
+#### Part 2: `<img src=1 onerror=alert(1)>`
 
+The later image element's angle brackets remained unescaped because the function replaced only the first occurrence of each character.
 
-Because the image source failed to load, its `onerror` event handler executed `alert(1)`.
+When the application assigned the resulting string to `innerHTML`, the browser interpreted the remaining image markup as an actual HTML element.
 
+#### Part 3: `src=1`
 
+The image's `src` value caused the browser to attempt to load an image resource. In this test, the resource failed to load.
 
-The alert appeared, confirming that the exploit worked.
+#### Part 4: `onerror=alert(1)`
 
+When the image failed to load, the browser triggered the `error` event. The inline `onerror` handler executed `alert(1)`.
 
+The alert appeared, confirming that I had successfully exploited the stored DOM XSS vulnerability.
 
-<p>
+Because the comment was stored by the application and processed again when the blog comments were loaded, the malicious input remained available for client-side processing.
 
-<img src="images/Screenshot 7.png" alt="Screenshot 7 - Successfully triggering alert(1)">
+## Understanding the Root Cause
 
-</p>
+My investigation revealed the following data flow:
 
+1. I submitted a comment through the blog's comment form.
+2. The application stored the comment.
+3. Client-side JavaScript retrieved the stored comments through an XMLHttpRequest.
+4. The `escapeHTML()` function replaced only the first occurrence of each angle bracket.
+5. The resulting string was assigned to `innerHTML`.
+6. The browser interpreted the remaining markup, allowing the image's `onerror` handler to execute JavaScript.
 
+The vulnerability was stored because the malicious comment was saved and processed again when comments were loaded. It was DOM-based because the unsafe HTML interpretation occurred in client-side JavaScript.
 
-\## Key Takeaway
+The core issue was **incomplete HTML encoding combined with inserting user-controlled content through `innerHTML`**.
 
+## Key Takeaway
 
+This lab taught me to trace user-controlled data from its source to the point where the browser interprets it, instead of relying on the appearance of the rendered page alone.
 
-This lab taught me to trace user-controlled data from its source to the point where the browser interprets it.
+I started with a normal comment, inspected how the data appeared in the DOM, tested special characters, and located the JavaScript responsible for loading stored comments.
 
+The key discovery was that `String.replace()` with a string argument replaces only the first occurrence. Because the application then used `innerHTML`, the remaining markup could still be interpreted by the browser.
 
+**The main lesson:** never rely on incomplete escaping to make untrusted HTML safe. When displaying plain text, prefer `textContent` instead of `innerHTML`. If user-supplied HTML must be supported, use a reputable HTML sanitizer.
 
-The vulnerable flow was:
-
-
-
-1\. The user submitted a comment that was stored by the application.
-
-2\. Client-side JavaScript retrieved the stored comment.
-
-3\. The `escapeHTML()` function encoded only the first occurrence of each angle bracket.
-
-4\. The resulting string was assigned to `innerHTML`.
-
-5\. The browser interpreted the remaining markup, allowing JavaScript execution.
-
-
-
-The main lesson is that security functions must handle all relevant input correctly. When displaying plain text, `textContent` is safer than `innerHTML`. If user-supplied HTML must be supported, a reputable HTML sanitizer should be used.
-
-
-
-\## Final Payload
-
-
+## Final Payload
 
 ```html
-
 <><img src=1 onerror=alert(1)>
-
 ```
 
-
-
-\*\*Result:\*\* Successfully triggered `alert(1)` and solved the Stored DOM XSS lab.
-
+**Result:** Successfully triggered `alert(1)` and solved the Stored DOM XSS lab.
