@@ -172,7 +172,7 @@ My next step was to test that hypothesis without immediately attempting JavaScri
 ### 6. Confirming the Vulnerability With a Harmless Test
 
 <p>
-<img src="images/screenshot 6.png" alt="Screenshot 6 - Testing whether later angle brackets survive the incomplete encoding">
+<img src="images/Screenshot 6.png" alt="Screenshot 6 - Testing whether later angle brackets survive the incomplete encoding">
 </p>
 
 Before attempting to execute JavaScript, I tested my hypothesis using harmless HTML-like input:
@@ -207,7 +207,7 @@ I had confirmed the root cause and could now test whether the remaining markup c
 ### 7. Exploiting the Stored DOM XSS
 
 <p>
-<img src="images/screenshot 7.png" alt="Screenshot 7 - Successfully triggering alert(1) with the stored DOM XSS payload">
+<img src="images/Screenshot 7.png" alt="Screenshot 7 - Successfully triggering alert(1) with the stored DOM XSS payload">
 </p>
 
 After confirming the vulnerability, I submitted the following payload as a blog comment:
