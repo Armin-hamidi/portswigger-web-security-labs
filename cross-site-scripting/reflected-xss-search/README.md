@@ -12,7 +12,7 @@ The objective of this lab was to identify and exploit a reflected Cross-Site Scr
 
 ## 2. Initial Reconnaissance
 
-When I opened the lab, I noticed a **search bar** on the page.
+When I opened the lab, I noticed a  **search bar**  on the page.
 
 Since search functionality commonly processes user-controlled input and reflects it back into the page, I suspected that the search parameter might be vulnerable to XSS.
 
