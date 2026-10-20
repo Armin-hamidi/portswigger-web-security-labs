@@ -2,7 +2,7 @@
 
 ## LAB - Reflected XSS into attribute with angle brackets HTML-encoded
 
-## Lab Description
+## Lab Description:
 
 **Platform:** PortSwigger Web Security Academy
 **Vulnerability:** Reflected Cross-Site Scripting (XSS)
