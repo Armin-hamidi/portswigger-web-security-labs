@@ -14,3 +14,4 @@ Documenting my hands-on practice with PortSwigger Web Security Academy labs, wit
 | [ XSS in document.write using source location.search](cross-site-scripting/DOM%20XSS%20using%20source%20location.search%20inside%20a%20select%20element) | Cross-Site Scripting (DOM-based) | Completed |
 | [ XSS in AngularJS ](cross-site-scripting/DOM-XSS-in-AngularJS-Expression) | Cross-Site Scripting (DOM-based) | Completed |
 | [ DOM XSS In comments](cross-site-scripting/stored-dom-xss) | Cross-Site Scripting (DOM-based) | Completed |
+| [Reflected XSS for a site with WAF](cross-site-scripting/Reflected%20XSS%20for%20a%20site%20with%20WAF/) | Cross-Site Scripting (Reflected) | Completed |
