@@ -5,7 +5,7 @@
 
 This lab demonstrates a DOM-based Cross-Site Scripting (XSS) vulnerability in the stock checker functionality.
 
-The page reads the `storeId` query parameter from the URL using `window.location.search` and `URLSearchParams`. It then inserts the value into HTML using `document.write()` to create an option inside a `<select>` element.
+The page reads the `storeId` query parameter from the URL using `window.location.search` and `URLSearchParams`. It then inserts the value into HTML using `document.write()` to create an  option inside a `<select>` element.
 
 Because the input is inserted into an HTML string without safe handling , I was able to manipulate the page's HTML structure and execute JavaScript in the browser.
 
