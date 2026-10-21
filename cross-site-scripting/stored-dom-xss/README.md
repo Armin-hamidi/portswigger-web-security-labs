@@ -1,6 +1,6 @@
 # Stored DOM XSS
 
-## Lab Description
+## Lab Description 
 
 **Difficulty:** Practitioner
 
