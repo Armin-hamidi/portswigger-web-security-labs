@@ -2,7 +2,7 @@
 
 ## Lab Description
 
-This PortSwigger Web Security Academy lab demonstrates reflected Cross-Site Scripting (XSS) in an HTML context where most tags and attributes are blocked by a Web Application Firewall (WAF).
+This PortSwigger Web Security  Academy lab demonstrates reflected Cross-Site Scripting (XSS) in an HTML context where most tags and attributes are blocked by a Web Application Firewall (WAF).
 
 The goal was to bypass the restrictions, find an allowed HTML element and event handler, and execute JavaScript without requiring the victim to interact with the page.
 
