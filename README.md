@@ -15,3 +15,4 @@ Documenting my hands-on  practice with PortSwigger Web Security Academy labs, wi
 | [ XSS in AngularJS ](cross-site-scripting/DOM-XSS-in-AngularJS-Expression) | Cross-Site Scripting (DOM-based) | Completed |
 | [ DOM XSS In comments](cross-site-scripting/stored-dom-xss) | Cross-Site Scripting (DOM-based) | Completed |
 | [Reflected XSS for a site with WAF](cross-site-scripting/Reflected%20XSS%20for%20a%20site%20with%20WAF/) | Cross-Site Scripting (Reflected) | Completed |
+| [Reflected XSS into HTML with Custom Tags](cross-site-scripting/Reflected%20XSS%20into%20HTML%20with%20Custom%20tags) | Cross-Site Scripting (Reflected) | Completed |
