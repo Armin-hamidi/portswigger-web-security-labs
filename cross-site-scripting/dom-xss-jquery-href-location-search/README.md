@@ -8,7 +8,7 @@
 
 ### Objective
 
-The objective of this lab was to identify and exploit a DOM-based XSS vulnerability caused by user-controlled input from `location.search` being assigned to an anchor element's `href` attribute through jQuery.
+The objective of this lab  was to identify and exploit a DOM-based XSS vulnerability caused by user-controlled input from `location.search` being assigned to an anchor element's `href` attribute through jQuery.
 
 ---
 
