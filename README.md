@@ -17,4 +17,3 @@ Documenting my hands-on  practice with PortSwigger Web Security Academy labs, wi
 | [Reflected XSS for a site with WAF](cross-site-scripting/Reflected%20XSS%20for%20a%20site%20with%20WAF/) | Cross-Site Scripting (Reflected) | Completed |
 | [Reflected XSS into HTML with Custom Tags](cross-site-scripting/Reflected%20XSS%20into%20HTML%20with%20Custom%20tags) | Cross-Site Scripting (Reflected) | Completed |
 | [Reflected XSS with Some SVG Markup Allowed](cross-site-scripting/Reflected%20XSS%20with%20Some%20SVG%20Markup%20Allowed) | Cross-Site Scripting (Reflected) | Completed |
-| [Reflected XSS with Some SVG Markup Allowed](cross-site-scripting/Reflected%20XSS%20with%20Some%20SVG%20Markup%20Allowed) | Cross-Site Scripting (Reflected) | Completed |
